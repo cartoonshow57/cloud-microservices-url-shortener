@@ -1,0 +1,65 @@
+name: Build, Test & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install API service dependencies
+        run: pip install -r api_service/requirements.txt
+
+      - name: Install Redirect service dependencies
+        run: pip install -r redirect_service/requirements.txt
+
+      - name: Test API service
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          BASE_URL: http://localhost
+        run: pytest api_service/test_app.py -v
+
+      - name: Test Redirect service
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: pytest redirect_service/test_app.py -v
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy to Azure VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.AZURE_VM_HOST }}
+          username: ${{ secrets.AZURE_VM_USER }}
+          key: ${{ secrets.AZURE_VM_SSH_KEY }}
+          script: |
+            cd ~/cloud_project
+            git pull origin main
+            docker compose up -d --build
