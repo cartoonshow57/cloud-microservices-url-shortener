@@ -62,4 +62,5 @@ jobs:
           script: |
             cd ~/cloud_project
             git pull origin main
+            export $(cat .env | xargs)
             docker compose up -d --build
