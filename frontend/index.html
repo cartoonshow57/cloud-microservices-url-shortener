@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        input[type="url"] {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="url"]:focus { border-color: #38bdf8; }
+        input[type="url"]::placeholder { color: #64748b; }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            color: #0f172a;
+        }
+
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .result {
+            margin-top: 1.25rem;
+            padding: 1rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result.show { display: block; }
+
+        .result-url {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .result-url a {
+            color: #38bdf8;
+            text-decoration: none;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .result-url a:hover { text-decoration: underline; }
+
+        .btn-copy {
+            background: #334155;
+            color: #e2e8f0;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .btn-copy:hover { background: #475569; }
+
+        .error {
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            background: #7f1d1d33;
+            border: 1px solid #991b1b;
+            border-radius: 8px;
+            color: #fca5a5;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .error.show { display: block; }
+
+        h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.6rem 0.75rem;
+            border-bottom: 2px solid #334155;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid #1e293b;
+            font-size: 0.9rem;
+        }
+
+        td a { color: #38bdf8; text-decoration: none; }
+        td a:hover { text-decoration: underline; }
+
+        .original-url {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #94a3b8;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #64748b;
+            padding: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            background: #334155;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-left: 0.5rem;
+        }
+
+        .footer {
+            margin-top: auto;
+            padding-top: 2rem;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>URL Shortener</h1>
+    <p class="subtitle">Paste a long URL and get a short one. Powered by microservices on Azure.</p>
+
+    <div class="card">
+        <div class="input-group">
+            <input type="url" id="urlInput" placeholder="https://example.com/very/long/url" autofocus>
+            <button class="btn-primary" id="shortenBtn" onclick="shortenUrl()">Shorten</button>
+        </div>
+        <div class="result" id="result">
+            <div class="result-url">
+                <a id="shortUrl" href="#" target="_blank"></a>
+                <button class="btn-copy" onclick="copyUrl()">Copy</button>
+            </div>
+        </div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <div class="card">
+        <h2>Recent URLs <span class="badge" id="urlCount">0</span></h2>
+        <div id="urlList">
+            <p class="empty-state">No URLs shortened yet.</p>
+        </div>
+    </div>
+
+    <p class="footer">Microservices &middot; Docker &middot; Azure &middot; CI/CD</p>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        async function shortenUrl() {
+            const input = document.getElementById('urlInput');
+            const btn = document.getElementById('shortenBtn');
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+            const shortUrlLink = document.getElementById('shortUrl');
+
+            const url = input.value.trim();
+            if (!url) { input.focus(); return; }
+
+            btn.disabled = true;
+            btn.textContent = '...';
+            resultDiv.classList.remove('show');
+            errorDiv.classList.remove('show');
+
+            try {
+                const res = await fetch(`${API_BASE}/shorten`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                if (res.status === 429) {
+                    errorDiv.textContent = 'Rate limit exceeded. Please wait a moment and try again.';
+                    errorDiv.classList.add('show');
+                    return;
+                }
+
+                if (res.status === 422) {
+                    errorDiv.textContent = 'Invalid URL. Please enter a valid URL starting with http:// or https://';
+                    errorDiv.classList.add('show');
+                    return;
+                }
+
+                if (!res.ok) {
+                    errorDiv.textContent = 'Something went wrong. Please try again.';
+                    errorDiv.classList.add('show');
+                    return;
+                }
+
+                const data = await res.json();
+                shortUrlLink.href = data.short_url;
+                shortUrlLink.textContent = data.short_url;
+                resultDiv.classList.add('show');
+                input.value = '';
+                loadUrls();
+            } catch (err) {
+                errorDiv.textContent = 'Could not connect to the server.';
+                errorDiv.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Shorten';
+            }
+        }
+
+        async function copyUrl() {
+            const url = document.getElementById('shortUrl').textContent;
+            try {
+                await navigator.clipboard.writeText(url);
+                const btn = document.querySelector('.btn-copy');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 1500);
+            } catch {
+                const input = document.createElement('input');
+                input.value = url;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                const btn = document.querySelector('.btn-copy');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 1500);
+            }
+        }
+
+        async function loadUrls() {
+            try {
+                const res = await fetch(`${API_BASE}/urls`);
+                const data = await res.json();
+                const entries = Object.entries(data);
+                const countBadge = document.getElementById('urlCount');
+                countBadge.textContent = entries.length;
+
+                const container = document.getElementById('urlList');
+                if (entries.length === 0) {
+                    container.innerHTML = '<p class="empty-state">No URLs shortened yet.</p>';
+                    return;
+                }
+
+                let html = '<table><thead><tr><th>Short URL</th><th>Original URL</th></tr></thead><tbody>';
+                for (const [code, originalUrl] of entries.reverse()) {
+                    const shortUrl = `${API_BASE}/r/${code}`;
+                    html += `<tr>
+                        <td><a href="${shortUrl}" target="_blank">${shortUrl}</a></td>
+                        <td class="original-url" title="${originalUrl}">${originalUrl}</td>
+                    </tr>`;
+                }
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (err) {
+                console.error('Failed to load URLs:', err);
+            }
+        }
+
+        document.getElementById('urlInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') shortenUrl();
+        });
+
+        loadUrls();
+    </script>
+</body>
+</html>
