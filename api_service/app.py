@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, HttpUrl
 import redis
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
 app = FastAPI(title="URL Shortener API")
 
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
@@ -95,3 +97,6 @@ def health():
         return {"status": "healthy", "redis": "connected"}
     except redis.ConnectionError:
         raise HTTPException(status_code=503, detail="Redis unavailable")
+
+
+Instrumentator().instrument(app).expose(app)

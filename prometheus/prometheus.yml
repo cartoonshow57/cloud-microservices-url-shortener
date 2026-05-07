@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "api_service"
+    static_configs:
+      - targets: ["api:8001"]
+        labels:
+          service: "api"
+
+  - job_name: "redirect_service"
+    static_configs:
+      - targets: ["redirect:8002"]
+        labels:
+          service: "redirect"
